@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>StudPal</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fffafc; --panel:#fff3f6; --muted:#6b6b78; --text:#2b2b2b; --accent:#ffb6c1; --accent-2:#ffd6e8;
+  --card-radius:14px; --gap:12px;
+}
+/* Dark Theme */
+[data-theme="dark"] {
+  --bg:#1e1e2f;
+  --panel:#2c2c3c;
+  --text:#f0f0f0;
+  --muted:#a0a0a0;
+  --accent:#ff7f50;
+  --accent-2:#ff9f7f;
+}
+/* Pink Theme */
+[data-theme="pink"] {
+  --bg:#fff0f5;
+  --panel:#ffe4eb;
+  --text:#3b003b;
+  --muted:#a05a85;
+  --accent:#ff69b4;
+  --accent-2:#ff85c1;
+}
+/* Blue Theme */
+[data-theme="blue"] {
+  --bg:#f0f8ff;
+  --panel:#e0f0ff;
+  --text:#0d1f3c;
+  --muted:#6b7c93;
+  --accent:#1e90ff;
+  --accent-2:#63b3ff;
+}
+body{font-family:'Poppins',system-ui,Segoe UI,Roboto,Arial; margin:0; background:var(--bg); color:var(--text); display:flex; min-height:100vh; flex-direction:column;}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px; background:var(--panel);}
+h1{font-size:18px;margin:0}
+.controls{display:flex;gap:8px;align-items:center}
+.panel{background:linear-gradient(180deg,#ffffffa8,var(--panel));border-radius:var(--card-radius);padding:12px;box-shadow:0 6px 18px rgba(2,6,23,0.04)}
+input,select,textarea,button{font:inherit}
+input[type="text"], input[type="date"], select, textarea { width:100%; padding:10px;border-radius:10px;border:1px solid rgba(0,0,0,0.06); background:transparent; color:var(--text) }
+textarea{min-height:60px;resize:vertical}
+button{padding:8px 10px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer}
+button.ghost{background:transparent;border:1px dashed rgba(0,0,0,0.06);color:var(--text)}
+.list{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow:auto}
+.item{padding:8px;border-radius:10px;background:linear-gradient(180deg, #fff,#fff0f6);display:flex;flex-direction:column;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.03);}
+.pill{font-size:12px;padding:4px 8px;border-radius:999px;background:rgba(0,0,0,0.06);}
+.card-view{height:120px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;background:linear-gradient(180deg,#fffef9,#fff3f6);padding:12px;text-align:center;cursor:pointer}
+.progress{height:8px;border-radius:8px;background:#eee;overflow:hidden}
+.progInner{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.fs-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;background:linear-gradient(180deg,rgba(0,0,0,0.9),rgba(0,0,0,0.95));color:#fff;z-index:9999}
+.fs-focus{font-size:56px;font-weight:900;letter-spacing:8px;white-space:nowrap;overflow:hidden}
+/* Fullscreen card flip styles */
+.fs-card { 
+  perspective: 1000px; 
+  width: 80vw; 
+  height: 60vh; 
+}
+.fs-card-inner {
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.fs-card-front, .fs-card-back {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  font-size: 48px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  padding: 0 20px;
+  word-wrap: break-word;
+}
+.fs-card-back {
+  transform: rotateY(180deg);
+}
+.flipped {
+  transform: rotateY(180deg);
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div style="display:flex; min-height:100vh; width:100%">
+  <div id="sidebar" style="width:200px; background:var(--panel); padding:12px; display:flex; flex-direction:column; gap:12px;">
+    <h2 style="margin:0; font-size:18px;">Menu</h2>
+    <button onclick="showHome()" style="padding:8px; border:none; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer;">Home</button>
+    <button onclick="showCompletedTasks()" style="padding:8px; border:none; border-radius:10px; background:var(--accent-2); color:#fff; cursor:pointer;">Completed Tasks</button>
+  </div>
+
+  <div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:14px; padding:12px; overflow:auto" id="mainContent">
+
+<header>
+  <h1>StudPal</h1>
+  <div class="controls">
+    <input id="searchInput" type="text" placeholder="Search notes & tasks..." style="padding:8px;border-radius:12px;border:1px solid rgba(0,0,0,0.06)" />
+    <select id="themeSelect" style="padding:8px;border-radius:12px;margin-left:8px">
+      <option value="default">Light</option>
+      <option value="dark">Dark</option>
+      <option value="pink">Pink</option>
+      <option value="blue">Blue</option>
+      <option value="purple">Purple</option>
+    </select>
+  </div>
+</header>
+
+<!-- Notes -->
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Notes</div></div>
+  <input id="noteTitle" type="text" placeholder="Title" />
+  <textarea id="noteText" placeholder="Take a note..."></textarea>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+    <button id="addNoteBtn">Add</button>
+    <button id="clearNotes" class="ghost">Clear All</button>
+  </div>
+  <div class="list" id="notesList"></div>
+</div>
+
+<!-- Tasks -->
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Tasks</div></div>
+  <input id="taskName" type="text" placeholder="Task" />
+  <input id="taskSubject" type="text" placeholder="Subject" style="margin-top:4px"/>
+  <input id="taskDeadline" type="date" style="margin-top:4px"/>
+  <select id="taskCategory" style="margin-top:4px">
+    <option value="">Category</option><option>Major</option><option>Core</option><option>Minor</option><option>Gen-Ed</option>
+  </select>
+  <select id="taskLabel" style="margin-top:4px">
+    <option value="">Label</option><option>Academics</option><option>Personal</option><option>Work</option>
+  </select>
+  <div style="display:flex;gap:8px;margin-top:6px">
+    <button id="addTaskBtn">Add Task</button>
+    <button id="clearTasks" class="ghost">Clear All</button>
+  </div>
+  <div class="list" id="tasksList"></div>
+</div>
+
+<!-- Flashcards -->
+<div class="panel" style="grid-column:1 / 2">
+  <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Flashcards</div></div>
+  <input id="cardQ" type="text" placeholder="Question" style="margin-top:4px"/>
+  <input id="cardA" type="text" placeholder="Answer" style="margin-top:4px"/>
+  <div style="display:flex;gap:8px;margin-top:6px">
+    <button id="addCard">Add Card</button>
+    <button id="prevCard" class="ghost">Prev</button>
+    <button id="nextCard" class="ghost">Next</button>
+    <button id="deleteCard" class="ghost">Delete</button>
+  </div>
+  <div class="card-view" id="cardView">No deck</div>
+  <div class="progress" style="margin-top:6px"><div id="cardProg" class="progInner"></div></div>
+  <div style="margin-top:4px"><span id="cardCount">0 / 0</span></div>
+</div>
+
+<!-- Pomodoro -->
+<div class="panel" style="grid-column:2 / 3">
+  <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:700">Pomodoro</div></div>
+  <div style="font-size:28px;font-weight:700;margin-top:6px" id="pomTimer">25:00</div>
+  <div style="display:flex;gap:8px;margin-top:6px">
+    <button id="startPom">Start</button>
+    <button id="pausePom" class="ghost">Pause</button>
+    <button id="stopPom" class="ghost">Stop</button>
+  </div>
+</div>
+
+</div> <!-- end mainContent -->
+</div> <!-- end flex container -->
+
+<!-- Fullscreen Pomodoro -->
+<div id="fsOverlay" class="fs-overlay">
+  <div class="fs-focus">FOCUS</div>
+  <div style="font-size:96px;font-weight:800;margin-top:18px" id="fsTimer">25:00</div>
+  <div style="margin-top:18px"><button id="fsStop" class="ghost">Exit</button></div>
+</div>
+
+<!-- Fullscreen Flashcards -->
+<div id="fsCardOverlay" class="fs-overlay">
+  <div class="fs-card" id="fsCard">
+    <div class="fs-card-inner" id="fsCardInner">
+      <div class="fs-card-front" id="fsCardFront">QUESTION</div>
+      <div class="fs-card-back" id="fsCardBack">ANSWER</div>
+    </div>
+  </div>
+  <div style="display:flex; gap:12px; margin-top:18px">
+    <button id="fsPrevCardBtn" class="ghost">Prev Card</button>
+    <button id="fsCardToggle" class="ghost">Show Answer</button>
+    <button id="fsNextCardBtn" class="ghost">Next Card</button>
+    <button id="fsDeleteCardBtn" class="ghost">Delete Card</button>
+    <button id="fsCardClose" class="ghost">Exit</button>
+  </div>
+</div>
+
+<script>
+// ---------- Theme Switcher ----------
+const themeSelect = document.getElementById('themeSelect');
+document.body.setAttribute('data-theme', localStorage.getItem('stm_theme') || 'default');
+themeSelect.value = localStorage.getItem('stm_theme') || 'default';
+themeSelect.addEventListener('change', () => {
+  const theme = themeSelect.value;
+  document.body.setAttribute('data-theme', theme);
+  localStorage.setItem('stm_theme', theme);
+});
+
+// ---------- Notes ----------
+let notes = JSON.parse(localStorage.getItem('stm_notes')||'[]');
+const notesListEl=document.getElementById('notesList');
+const noteTitle=document.getElementById('noteTitle');
+const noteText=document.getElementById('noteText');
+document.getElementById('addNoteBtn').addEventListener('click',()=>{const t=noteTitle.value.trim(), c=noteText.value.trim(); if(!t&&!c)return; notes.unshift({title:t,text:c,created:new Date().toISOString()}); saveNotes(); renderNotes(); noteTitle.value=''; noteText.value='';});
+document.getElementById('clearNotes').addEventListener('click',()=>{if(confirm('Clear all notes?')){notes=[];saveNotes();renderNotes();}});
+function saveNotes(){localStorage.setItem('stm_notes',JSON.stringify(notes));}
+function renderNotes(){
+  notesListEl.innerHTML='';
+  notes.forEach((n,i)=>{
+    const card=document.createElement('div'); card.className='item';
+    card.innerHTML=`<input type="text" class="note-title" value="${n.title}" placeholder="Title"/>
+    <textarea class="note-text">${n.text}</textarea>
+    <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:4px"><button class="ghost del-note">Delete</button></div>`;
+    card.querySelector('.note-title').addEventListener('input',e=>{notes[i].title=e.target.value; saveNotes();});
+    card.querySelector('.note-text').addEventListener('input',e=>{notes[i].text=e.target.value; saveNotes();});
+    card.querySelector('.del-note').addEventListener('click',()=>{notes.splice(i,1); saveNotes(); renderNotes();});
+    notesListEl.appendChild(card);
+  });
+}
+renderNotes();
+
+// ---------- Tasks ----------
+let tasks = JSON.parse(localStorage.getItem('stm_tasks')||'[]');
+tasks = tasks.map(t => t.completed ? t : {...t, completed:false});
+const tasksListEl=document.getElementById('tasksList');
+const taskName=document.getElementById('taskName');
+const taskSubject=document.getElementById('taskSubject');
+const taskDeadline=document.getElementById('taskDeadline');
+const taskCategory=document.getElementById('taskCategory');
+const taskLabel=document.getElementById('taskLabel');
+document.getElementById('addTaskBtn').addEventListener('click',()=>{
+  const name=taskName.value.trim(); if(!name||!taskDeadline.value) return;
+  tasks.unshift({name,subject:taskSubject.value,deadline:taskDeadline.value,category:taskCategory.value,label:taskLabel.value,created:new Date().toISOString(), completed:false});
+  saveTasks(); renderTasks(); taskName.value=''; taskSubject.value=''; taskDeadline.value=''; taskCategory.value=''; taskLabel.value='';
+});
+document.getElementById('clearTasks').addEventListener('click',()=>{if(confirm('Clear all tasks?')){tasks=[]; saveTasks(); renderTasks();}});
+function saveTasks(){localStorage.setItem('stm_tasks',JSON.stringify(tasks));}
+
+function renderTasks(showCompleted=false){
+  tasksListEl.innerHTML='';
+  tasks.forEach((t,i)=>{
+    if(showCompleted && !t.completed) return;
+    if(!showCompleted && t.completed) return;
+
+    const card=document.createElement('div'); 
+    card.className='item';
+
+    // Completed tasks style
+    if(t.completed){
+      card.style.opacity = '0.6';
+      card.style.textDecoration = 'line-through';
+    } else {
+      card.style.opacity = '1';
+      card.style.textDecoration = 'none';
+    }
+
+    card.innerHTML=`
+      <input type="text" class="task-name" value="${t.name}" ${t.completed ? 'readonly' : ''}/>
+      <input type="text" class="task-subject" value="${t.subject}" style="margin-top:4px" ${t.completed ? 'readonly' : ''}/>
+      <input type="date" class="task-deadline" value="${t.deadline}" style="margin-top:4px" ${t.completed ? 'readonly' : ''}/>
+      <select class="task-category" style="margin-top:4px" ${t.completed ? 'disabled' : ''}>
+        <option value="">Category</option>
+        <option ${t.category==='Major'?'selected':''}>Major</option>
+        <option ${t.category==='Core'?'selected':''}>Core</option>
+        <option ${t.category==='Minor'?'selected':''}>Minor</option>
+        <option ${t.category==='Gen-Ed'?'selected':''}>Gen-Ed</option>
+      </select>
+      <select class="task-label" style="margin-top:4px" ${t.completed ? 'disabled' : ''}>
+        <option value="">Label</option>
+        <option ${t.label==='Academics'?'selected':''}>Academics</option>
+        <option ${t.label==='Personal'?'selected':''}>Personal</option>
+        <option ${t.label==='Work'?'selected':''}>Work</option>
+      </select>
+      <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:4px">
+        <button class="ghost del-task">Delete</button>
+        <button class="ghost toggle-complete">${t.completed?'Undo':'Complete'}</button>
+      </div>`;
+
+    card.querySelector('.task-name')?.addEventListener('input',e=>{tasks[i].name=e.target.value; saveTasks();});
+    card.querySelector('.task-subject')?.addEventListener('input',e=>{tasks[i].subject=e.target.value; saveTasks();});
+    card.querySelector('.task-deadline')?.addEventListener('input',e=>{tasks[i].deadline=e.target.value; saveTasks();});
+    card.querySelector('.task-category')?.addEventListener('change',e=>{tasks[i].category=e.target.value; saveTasks();});
+    card.querySelector('.task-label')?.addEventListener('change',e=>{tasks[i].label=e.target.value; saveTasks();});
+    card.querySelector('.del-task').addEventListener('click',()=>{tasks.splice(i,1); saveTasks(); renderTasks(showCompleted);});
+    card.querySelector('.toggle-complete').addEventListener('click',()=>{tasks[i].completed=!tasks[i].completed; saveTasks(); renderTasks(showCompleted);});
+
+    tasksListEl.appendChild(card);
+  });
+}
+
+function showHome(){ renderTasks(false); }
+function showCompletedTasks(){ renderTasks(true); }
+
+renderTasks();
+
+// ---------- Flashcards ----------
+let deck = JSON.parse(localStorage.getItem('stm_deck') || '[]');
+let currentCard = 0; let showingAnswer = false;
+const cardView = document.getElementById('cardView');
+const cardProg = document.getElementById('cardProg');
+const cardCount = document.getElementById('cardCount');
+const fsCardOverlay = document.getElementById('fsCardOverlay');
+const fsCard = document.getElementById('fsCardInner');
+const fsCardFront = document.getElementById('fsCardFront');
+const fsCardBack = document.getElementById('fsCardBack');
+const fsCardToggle = document.getElementById('fsCardToggle');
+const fsCardClose = document.getElementById('fsCardClose');
+const fsNextCardBtn = document.getElementById('fsNextCardBtn');
+const fsPrevCardBtn = document.getElementById('fsPrevCardBtn');
+const fsDeleteCardBtn = document.getElementById('fsDeleteCardBtn');
+const deleteCardBtn = document.getElementById('deleteCard');
+
+function saveDeck(){ localStorage.setItem('stm_deck', JSON.stringify(deck)); }
+
+function renderCard(){
+  if(!deck.length){ cardView.textContent='No deck'; cardCount.textContent='0 / 0'; cardProg.style.width='0%'; return; }
+  const c=deck[currentCard];
+  cardView.textContent=c.q;
+  cardCount.textContent=`${currentCard+1} / ${deck.length}`;
+  cardProg.style.width=`${((currentCard+1)/deck.length)*100}%`;
+}
+
+function openFullscreenCard(){ if(!deck.length)return; const c=deck[currentCard]; fsCardFront.textContent=c.q; fsCardBack.textContent=c.a; fsCardOverlay.style.display='flex'; fsCard.classList.remove('flipped'); showingAnswer=false; fsCardToggle.textContent='Show Answer'; }
+
+function nextCard(){ if(!deck.length)return; currentCard=(currentCard<deck.length-1)?currentCard+1:0; renderCard(); }
+function prevCard(){ if(!deck.length)return; currentCard=(currentCard>0)?currentCard-1:deck.length-1; renderCard(); }
+
+function deleteCurrentCard(){ if(!deck.length)return; if(!confirm('Delete this flashcard?'))return; deck.splice(currentCard,1); if(currentCard>=deck.length)currentCard=deck.length-1; saveDeck(); renderCard(); fsCardOverlay.style.display='none'; }
+
+document.getElementById('addCard').addEventListener('click',()=>{ const q=document.getElementById('cardQ').value.trim(); const a=document.getElementById('cardA').value.trim(); if(!q||!a)return; deck.push({q,a}); saveDeck(); currentCard=deck.length-1; renderCard(); document.getElementById('cardQ').value=''; document.getElementById('cardA').value='';});
+document.getElementById('prevCard').addEventListener('click',prevCard);
+document.getElementById('nextCard').addEventListener('click',nextCard);
+deleteCardBtn.addEventListener('click',deleteCurrentCard);
+cardView.addEventListener('click',openFullscreenCard);
+fsCardToggle.addEventListener('click',()=>{ showingAnswer=!showingAnswer; if(showingAnswer){fsCard.classList.add('flipped'); fsCardToggle.textContent='Show Question';} else{fsCard.classList.remove('flipped'); fsCardToggle.textContent='Show Answer';}});
+fsNextCardBtn.addEventListener('click',()=>{ nextCard(); openFullscreenCard(); });
+fsPrevCardBtn.addEventListener('click',()=>{ prevCard(); openFullscreenCard(); });
+fsDeleteCardBtn.addEventListener('click',deleteCurrentCard);
+fsCardClose.addEventListener('click',()=>{ fsCardOverlay.style.display='none'; showingAnswer=false; fsCard.classList.remove('flipped'); });
+renderCard();
+
+// ---------- Pomodoro ----------
+let pomTime=25*60; let pomInterval=null; const pomDisplay=document.getElementById('pomTimer'); const fsPomOverlay=document.getElementById('fsOverlay'); const fsTimer=document.getElementById('fsTimer');
+function updatePomDisplay(){ const m=Math.floor(pomTime/60).toString().padStart(2,'0'); const s=(pomTime%60).toString().padStart(2,'0'); pomDisplay.textContent=`${m}:${s}`; fsTimer.textContent=`${m}:${s}`; }
+function startPom(){ if(pomInterval)return; fsPomOverlay.style.display='flex'; pomInterval=setInterval(()=>{if(pomTime>0){pomTime--; updatePomDisplay();} else{clearInterval(pomInterval); pomInterval=null; alert('Pomodoro complete!');}},1000);}
+function pausePom(){ clearInterval(pomInterval); pomInterval=null; }
+function stopPom(){ clearInterval(pomInterval); pomInterval=null; pomTime=25*60; updatePomDisplay(); fsPomOverlay.style.display='none'; }
+document.getElementById('startPom').addEventListener('click',startPom);
+document.getElementById('pausePom').addEventListener('click',pausePom);
+document.getElementById('stopPom').addEventListener('click',stopPom);
+document.getElementById('fsStop').addEventListener('click',stopPom);
+
+updatePomDisplay();
+</script>
+
+</body>
+</html>
